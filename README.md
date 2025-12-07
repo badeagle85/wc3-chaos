@@ -1,3 +1,11 @@
+# WC3 카오스
+
+워크래프트3 카오스 커뮤니티 팀 밸런서 & 티어표
+
+🔗 **배포 링크**: https://wc3-chaos.vercel.app/
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
