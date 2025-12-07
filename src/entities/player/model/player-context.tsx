@@ -17,12 +17,13 @@ interface PlayerContextValue {
   isLoading: boolean
   error: string | null
   refetch: () => void
-  updatePlayerTier: (playerName: string, newTier: TierKey) => Promise<boolean>
+  updatePlayerTier: (playerName: string, newTier: TierKey, banReason?: string) => Promise<boolean>
   addPlayer: (name: string, tier: TierKey) => Promise<{ success: boolean; error?: string }>
   // 헬퍼 함수들
   getPlayerTier: (name: string) => TierKey | null
   getPlayerScore: (name: string) => number
   isBannedPlayer: (name: string) => boolean
+  getPlayerBanReason: (name: string) => string | null
   getPlayerList: (tier: TierKey) => string[]
   allPlayers: { name: string; tier: TierKey }[]
 }
@@ -38,11 +39,11 @@ async function fetchPlayers(): Promise<PlayerData[]> {
   return res.json()
 }
 
-async function updatePlayerTierApi(playerName: string, newTier: TierKey) {
+async function updatePlayerTierApi(playerName: string, newTier: TierKey, banReason?: string) {
   const res = await fetch(`/api/players/${encodeURIComponent(playerName)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tier: newTier }),
+    body: JSON.stringify({ tier: newTier, ban_reason: banReason }),
   })
   if (!res.ok) {
     throw new Error("Failed to update player tier")
@@ -79,14 +80,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // 티어 업데이트 mutation
   const updateMutation = useMutation({
-    mutationFn: ({ playerName, newTier }: { playerName: string; newTier: TierKey }) =>
-      updatePlayerTierApi(playerName, newTier),
-    onSuccess: (_, { playerName, newTier }) => {
+    mutationFn: ({
+      playerName,
+      newTier,
+      banReason,
+    }: {
+      playerName: string
+      newTier: TierKey
+      banReason?: string
+    }) => updatePlayerTierApi(playerName, newTier, banReason),
+    onSuccess: (_, { playerName, newTier, banReason }) => {
       // 캐시 직접 업데이트 (낙관적 업데이트)
       queryClient.setQueryData<PlayerData[]>(["players"], (old) =>
         old?.map((p) =>
           p.name === playerName
-            ? { ...p, tier: newTier, status: newTier === "banned" ? "banned" : newTier === "new" ? "new" : "active" }
+            ? {
+                ...p,
+                tier: newTier,
+                status: newTier === "banned" ? "banned" : newTier === "new" ? "new" : "active",
+                ban_reason: newTier === "banned" ? banReason || null : null,
+              }
             : p
         )
       )
@@ -111,9 +124,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   })
 
   const updatePlayerTier = useCallback(
-    async (playerName: string, newTier: TierKey): Promise<boolean> => {
+    async (playerName: string, newTier: TierKey, banReason?: string): Promise<boolean> => {
       try {
-        await updateMutation.mutateAsync({ playerName, newTier })
+        await updateMutation.mutateAsync({ playerName, newTier, banReason })
         return true
       } catch {
         return false
@@ -159,6 +172,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [players]
   )
 
+  const getPlayerBanReason = useCallback(
+    (name: string): string | null => {
+      const player = players.find((p) => p.name.toLowerCase() === name.toLowerCase())
+      return player?.ban_reason ?? null
+    },
+    [players]
+  )
+
   const getPlayerList = useCallback(
     (tier: TierKey): string[] => {
       return players.filter((p) => p.tier === tier).map((p) => p.name)
@@ -180,6 +201,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         getPlayerTier,
         getPlayerScore,
         isBannedPlayer,
+        getPlayerBanReason,
         getPlayerList,
         allPlayers,
       }}

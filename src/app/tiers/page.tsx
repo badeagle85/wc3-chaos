@@ -27,7 +27,13 @@ const tierOrderWithBanned: TierKey[] = [
 
 export default function TiersPage() {
   const { isAuthenticated, isLoading: authLoading, login, logout } = useAuth()
-  const { players, isLoading: playersLoading, updatePlayerTier, addPlayer } = usePlayerContext()
+  const {
+    players,
+    isLoading: playersLoading,
+    updatePlayerTier,
+    addPlayer,
+    getPlayerBanReason,
+  } = usePlayerContext()
   const [showLoginDialog, setShowLoginDialog] = useState(false)
   const [password, setPassword] = useState("")
   const [isLoggingIn, setIsLoggingIn] = useState(false)
@@ -78,10 +84,14 @@ export default function TiersPage() {
     setEditModalOpen(true)
   }
 
-  const handleSaveTier = async (playerName: string, newTier: TierKey) => {
-    const success = await updatePlayerTier(playerName, newTier)
+  const handleSaveTier = async (playerName: string, newTier: TierKey, banReason?: string) => {
+    const success = await updatePlayerTier(playerName, newTier, banReason)
     if (success) {
-      toast.success(`${playerName}의 티어가 변경되었습니다.`)
+      if (newTier === Tier.BANNED) {
+        toast.success(`${playerName}이(가) 밴 처리되었습니다.`)
+      } else {
+        toast.success(`${playerName}의 티어가 변경되었습니다.`)
+      }
     } else {
       toast.error("티어 변경에 실패했습니다.")
     }
@@ -99,8 +109,8 @@ export default function TiersPage() {
     return (
       <LayoutWrapper title="티어표">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">플레이어 데이터 로딩 중...</span>
+          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+          <span className="text-muted-foreground ml-2">플레이어 데이터 로딩 중...</span>
         </div>
       </LayoutWrapper>
     )
@@ -109,19 +119,15 @@ export default function TiersPage() {
   return (
     <LayoutWrapper title="티어표">
       {/* 상단 컨트롤 */}
-      <div className="flex justify-end mb-4 gap-2">
+      <div className="mb-4 flex justify-end gap-2">
         {isAuthenticated ? (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddModalOpen(true)}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={() => setAddModalOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
               유저 추가
             </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
+              <LogOut className="mr-2 h-4 w-4" />
               로그아웃
             </Button>
           </>
@@ -132,7 +138,7 @@ export default function TiersPage() {
             onClick={() => setShowLoginDialog(true)}
             disabled={authLoading}
           >
-            <Lock className="h-4 w-4 mr-2" />
+            <Lock className="mr-2 h-4 w-4" />
             운영진 로그인
           </Button>
         )}
@@ -186,16 +192,13 @@ export default function TiersPage() {
           onOpenChange={setEditModalOpen}
           playerName={editingPlayer.name}
           currentTier={editingPlayer.tier}
+          currentBanReason={getPlayerBanReason(editingPlayer.name)}
           onSave={handleSaveTier}
         />
       )}
 
       {/* 유저 추가 모달 */}
-      <PlayerAddModal
-        open={addModalOpen}
-        onOpenChange={setAddModalOpen}
-        onAdd={handleAddPlayer}
-      />
+      <PlayerAddModal open={addModalOpen} onOpenChange={setAddModalOpen} onAdd={handleAddPlayer} />
     </LayoutWrapper>
   )
 }

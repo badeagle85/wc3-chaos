@@ -9,17 +9,19 @@ export async function PATCH(
   try {
     const { name } = await params
     const body = await request.json()
-    const { tier } = body as { tier: TierKey }
+    const { tier, ban_reason } = body as { tier: TierKey; ban_reason?: string }
 
     const supabase = await createServerSupabaseClient()
 
     // 티어에 따라 status와 tier 값 결정
     let dbTier: string
     let status: string
+    let banReason: string | null = null
 
     if (tier === "banned") {
-      dbTier = "7"
+      dbTier = "99" // banned는 99티어로 저장
       status = "banned"
+      banReason = ban_reason || null
     } else if (tier === "new") {
       dbTier = "7"
       status = "new"
@@ -30,7 +32,12 @@ export async function PATCH(
 
     const { data, error } = await supabase
       .from("chaos_players")
-      .update({ tier: dbTier, status, updated_at: new Date().toISOString() })
+      .update({
+        tier: dbTier,
+        status,
+        ban_reason: banReason,
+        updated_at: new Date().toISOString(),
+      })
       .eq("name", decodeURIComponent(name))
       .select()
 
