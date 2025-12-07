@@ -1,9 +1,20 @@
 "use client"
 
 import { Search, X, Pencil } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, Input, Badge } from "@/shared/ui"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Badge,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/shared/ui"
 import { tierColors, tierLabels } from "@/shared/config"
-import { TierListMode, type TierKey } from "@/shared/types"
+import { Tier, TierListMode, type TierKey } from "@/shared/types"
+import { usePlayerContext } from "@/entities/player"
 
 interface TierListProps {
   // 공통 props
@@ -15,7 +26,7 @@ interface TierListProps {
   filteredData: { tier: TierKey; players: string[]; matchedPlayers: Set<string> }[]
 
   // 모드별 설정
-  mode?: TierListMode  // standalone: 티어표 페이지, balancer: 밸런서 사이드
+  mode?: TierListMode // standalone: 티어표 페이지, balancer: 밸런서 사이드
 
   // standalone 모드 전용
   onSelectAll?: () => void
@@ -49,8 +60,20 @@ export function TierList({
   isEditMode = false,
   onEditPlayer,
 }: TierListProps) {
+  const { getBanInfo } = usePlayerContext()
   const isBalancerMode = mode === TierListMode.BALANCER
   const isStandaloneMode = mode === TierListMode.STANDALONE
+
+  // 날짜 포맷팅 함수
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "알 수 없음"
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -60,20 +83,20 @@ export function TierList({
             <CardTitle className="text-base">티어표 (클릭하여 추가)</CardTitle>
           </CardHeader>
         )}
-        <CardContent className={`space-y-3 ${isStandaloneMode ? "pt-6 space-y-4" : ""}`}>
+        <CardContent className={`space-y-3 ${isStandaloneMode ? "space-y-4 pt-6" : ""}`}>
           {/* 검색 */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="플레이어 검색..."
-              className={`pl-9 pr-9 ${isBalancerMode ? "h-9" : "text-base"}`}
+              className={`pr-9 pl-9 ${isBalancerMode ? "h-9" : "text-base"}`}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
             {searchQuery && (
               <button
                 onClick={() => onSearchChange("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -101,7 +124,7 @@ export function TierList({
                 <button
                   key={tier}
                   onClick={() => onToggleTier(tier)}
-                  className={`px-2 py-1 text-xs rounded-full font-medium transition-all ${
+                  className={`rounded-full px-2 py-1 text-xs font-medium transition-all ${
                     selectedTiers.has(tier)
                       ? `${tierColors[tier]} text-white`
                       : "bg-muted text-muted-foreground opacity-50"
@@ -115,16 +138,16 @@ export function TierList({
 
           {/* 결과 카운트 (standalone 모드만) */}
           {isStandaloneMode && totalPlayers !== undefined && matchedCount !== undefined && (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               {searchQuery.trim() ? (
                 <>
-                  <span className="font-medium text-foreground">{matchedCount}명</span> 검색됨
-                  {" "}(전체 {totalPlayers}명)
+                  <span className="text-foreground font-medium">{matchedCount}명</span> 검색됨 (전체{" "}
+                  {totalPlayers}명)
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-foreground">{matchedCount}명</span> 표시 중
-                  {" "}(전체 {totalPlayers}명)
+                  <span className="text-foreground font-medium">{matchedCount}명</span> 표시 중{" "}
+                  (전체 {totalPlayers}명)
                 </>
               )}
             </div>
@@ -135,7 +158,7 @@ export function TierList({
       {/* 티어 목록 */}
       {isStandaloneMode && filteredData.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
+          <CardContent className="text-muted-foreground py-12 text-center">
             {searchQuery.trim()
               ? `"${searchQuery}" 검색 결과가 없습니다.`
               : "선택된 티어가 없습니다."}
@@ -145,12 +168,12 @@ export function TierList({
         <div className="space-y-3">
           {filteredData.map(({ tier, players: tierPlayers, matchedPlayers }) => (
             <Card key={tier} className="overflow-hidden">
-              <CardHeader className={isBalancerMode ? "py-2 px-3" : "pb-3"}>
+              <CardHeader className={isBalancerMode ? "px-3 py-2" : "pb-3"}>
                 <CardTitle className={`flex items-center gap-2 ${isBalancerMode ? "text-sm" : ""}`}>
-                  <Badge className={`${tierColors[tier]} text-white`}>
-                    {tierLabels[tier]}
-                  </Badge>
-                  <span className={`text-muted-foreground font-normal ${isBalancerMode ? "text-xs" : "text-base"}`}>
+                  <Badge className={`${tierColors[tier]} text-white`}>{tierLabels[tier]}</Badge>
+                  <span
+                    className={`text-muted-foreground font-normal ${isBalancerMode ? "text-xs" : "text-base"}`}
+                  >
                     {searchQuery.trim() && matchedPlayers.size > 0
                       ? `${matchedPlayers.size}명 / ${tierPlayers.length}명`
                       : `${tierPlayers.length}명`}
@@ -170,14 +193,14 @@ export function TierList({
                           key={`${name}-${index}`}
                           onClick={() => onAddPlayer(name)}
                           disabled={isAdded}
-                          className={`px-2 py-1 text-sm rounded border transition-colors ${
+                          className={`rounded border px-2 py-1 text-sm transition-colors ${
                             isAdded
                               ? "bg-primary text-primary-foreground border-primary"
                               : isSearching
-                              ? isMatched
-                                ? "bg-yellow-100 border-yellow-400 hover:bg-yellow-200 dark:bg-yellow-900/50 dark:border-yellow-600 dark:hover:bg-yellow-900"
-                                : "opacity-40 border-border"
-                              : "border-border hover:bg-accent"
+                                ? isMatched
+                                  ? "border-yellow-400 bg-yellow-100 hover:bg-yellow-200 dark:border-yellow-600 dark:bg-yellow-900/50 dark:hover:bg-yellow-900"
+                                  : "border-border opacity-40"
+                                : "border-border hover:bg-accent"
                           }`}
                         >
                           {name}
@@ -185,28 +208,50 @@ export function TierList({
                       )
                     }
 
-                    return (
+                    // 밴 유저인 경우 툴팁 표시
+                    const banInfo = tier === Tier.BANNED ? getBanInfo(name) : null
+
+                    const playerElement = (
                       <span
-                        key={`${name}-${index}`}
-                        className={`px-2 py-1 text-sm rounded border transition-colors inline-flex items-center gap-1 ${
+                        className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-sm transition-colors ${
                           isSearching
                             ? isMatched
-                              ? "bg-yellow-100 border-yellow-400 dark:bg-yellow-900/50 dark:border-yellow-600"
-                              : "opacity-40 border-border"
-                            : "border-border"
+                              ? "border-yellow-400 bg-yellow-100 dark:border-yellow-600 dark:bg-yellow-900/50"
+                              : "border-border opacity-40"
+                            : tier === Tier.BANNED
+                              ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30"
+                              : "border-border"
                         }`}
                       >
                         {name}
                         {isEditMode && onEditPlayer && (
                           <button
                             onClick={() => onEditPlayer(name, tier)}
-                            className="ml-1 p-0.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
+                            className="hover:bg-primary/20 text-muted-foreground hover:text-primary ml-1 rounded p-0.5 transition-colors"
                           >
                             <Pencil className="h-3 w-3" />
                           </button>
                         )}
                       </span>
                     )
+
+                    // 밴 유저는 툴팁으로 감싸기
+                    if (banInfo) {
+                      return (
+                        <Tooltip key={`${name}-${index}`}>
+                          <TooltipTrigger asChild>{playerElement}</TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium">밴 사유</p>
+                              <p>{banInfo.reason || "사유 없음"}</p>
+                              <p className="text-xs opacity-70">{formatDate(banInfo.date)}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    }
+
+                    return <span key={`${name}-${index}`}>{playerElement}</span>
                   })}
                 </div>
               </CardContent>

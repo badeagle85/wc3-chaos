@@ -10,6 +10,12 @@ export interface PlayerData {
   tier: TierKey
   status: string
   ban_reason: string | null
+  updated_at: string
+}
+
+export interface BanInfo {
+  reason: string | null
+  date: string | null
 }
 
 interface PlayerContextValue {
@@ -24,6 +30,7 @@ interface PlayerContextValue {
   getPlayerScore: (name: string) => number
   isBannedPlayer: (name: string) => boolean
   getPlayerBanReason: (name: string) => string | null
+  getBanInfo: (name: string) => BanInfo | null
   getPlayerList: (tier: TierKey) => string[]
   allPlayers: { name: string; tier: TierKey }[]
 }
@@ -118,6 +125,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           tier,
           status: tier === "banned" ? "banned" : tier === "new" ? "new" : "active",
           ban_reason: null,
+          updated_at: new Date().toISOString(),
         },
       ])
     },
@@ -180,6 +188,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [players]
   )
 
+  const getBanInfo = useCallback(
+    (name: string): BanInfo | null => {
+      const player = players.find((p) => p.name.toLowerCase() === name.toLowerCase())
+      if (!player || player.status !== "banned") return null
+      return {
+        reason: player.ban_reason,
+        date: player.updated_at,
+      }
+    },
+    [players]
+  )
+
   const getPlayerList = useCallback(
     (tier: TierKey): string[] => {
       return players.filter((p) => p.tier === tier).map((p) => p.name)
@@ -202,6 +222,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         getPlayerScore,
         isBannedPlayer,
         getPlayerBanReason,
+        getBanInfo,
         getPlayerList,
         allPlayers,
       }}

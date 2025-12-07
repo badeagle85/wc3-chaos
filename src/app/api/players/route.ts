@@ -42,6 +42,7 @@ export async function GET() {
         tier,
         status: player.status,
         ban_reason: player.ban_reason,
+        updated_at: player.updated_at,
       }
     })
 
