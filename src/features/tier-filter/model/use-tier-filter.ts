@@ -3,14 +3,20 @@
 import { useState, useMemo, useCallback } from "react"
 import type { TierKey } from "@/shared/types"
 import { tierOrder as defaultTierOrder } from "@/shared/config"
-import { getPlayerList } from "@/entities/player"
+
+interface PlayerWithTier {
+  name: string
+  tier: TierKey
+}
 
 interface UseTierFilterOptions {
   tierOrder?: TierKey[]
+  players?: PlayerWithTier[]
 }
 
 export function useTierFilter(options?: UseTierFilterOptions) {
   const tierOrder = options?.tierOrder ?? defaultTierOrder
+  const players = options?.players ?? []
 
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTiers, setSelectedTiers] = useState<Set<TierKey>>(new Set(tierOrder))
@@ -35,13 +41,28 @@ export function useTierFilter(options?: UseTierFilterOptions) {
     setSelectedTiers(new Set())
   }, [])
 
+  // 티어별 플레이어 목록 생성
+  const playersByTier = useMemo(() => {
+    const map = new Map<TierKey, string[]>()
+    for (const tier of tierOrder) {
+      map.set(tier, [])
+    }
+    for (const player of players) {
+      const list = map.get(player.tier)
+      if (list) {
+        list.push(player.name)
+      }
+    }
+    return map
+  }, [players, tierOrder])
+
   const filteredData = useMemo(() => {
     const result: { tier: TierKey; players: string[]; matchedPlayers: Set<string> }[] = []
 
     for (const tier of tierOrder) {
       if (!selectedTiers.has(tier)) continue
 
-      const tierPlayers = getPlayerList(tier)
+      const tierPlayers = playersByTier.get(tier) ?? []
       const matchedPlayers = new Set<string>()
 
       if (searchQuery.trim()) {
@@ -60,11 +81,11 @@ export function useTierFilter(options?: UseTierFilterOptions) {
     }
 
     return result
-  }, [searchQuery, selectedTiers, tierOrder])
+  }, [searchQuery, selectedTiers, tierOrder, playersByTier])
 
   const totalPlayers = useMemo(() => {
-    return tierOrder.reduce((sum, tier) => sum + getPlayerList(tier).length, 0)
-  }, [tierOrder])
+    return players.length
+  }, [players])
 
   const matchedCount = useMemo(() => {
     return searchQuery.trim()

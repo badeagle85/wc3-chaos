@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, X } from "lucide-react"
+import { Search, X, Pencil } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, Input, Badge } from "@/shared/ui"
 import { tierColors, tierLabels } from "@/shared/config"
 import { TierListMode, type TierKey } from "@/shared/types"
@@ -26,6 +26,10 @@ interface TierListProps {
   // balancer 모드 전용
   isPlayerAdded?: (name: string) => boolean
   onAddPlayer?: (name: string) => void
+
+  // 편집 모드 전용
+  isEditMode?: boolean
+  onEditPlayer?: (playerName: string, currentTier: TierKey) => void
 }
 
 export function TierList({
@@ -42,6 +46,8 @@ export function TierList({
   matchedCount,
   isPlayerAdded,
   onAddPlayer,
+  isEditMode = false,
+  onEditPlayer,
 }: TierListProps) {
   const isBalancerMode = mode === TierListMode.BALANCER
   const isStandaloneMode = mode === TierListMode.STANDALONE
@@ -136,7 +142,7 @@ export function TierList({
           </CardContent>
         </Card>
       ) : (
-        <div className={`space-y-3 ${isBalancerMode ? "max-h-[600px] overflow-y-auto" : ""}`}>
+        <div className="space-y-3">
           {filteredData.map(({ tier, players: tierPlayers, matchedPlayers }) => (
             <Card key={tier} className="overflow-hidden">
               <CardHeader className={isBalancerMode ? "py-2 px-3" : "pb-3"}>
@@ -182,7 +188,7 @@ export function TierList({
                     return (
                       <span
                         key={`${name}-${index}`}
-                        className={`px-2 py-1 text-sm rounded border transition-colors ${
+                        className={`px-2 py-1 text-sm rounded border transition-colors inline-flex items-center gap-1 ${
                           isSearching
                             ? isMatched
                               ? "bg-yellow-100 border-yellow-400 dark:bg-yellow-900/50 dark:border-yellow-600"
@@ -191,6 +197,14 @@ export function TierList({
                         }`}
                       >
                         {name}
+                        {isEditMode && onEditPlayer && (
+                          <button
+                            onClick={() => onEditPlayer(name, tier)}
+                            className="ml-1 p-0.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
                       </span>
                     )
                   })}

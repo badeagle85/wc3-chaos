@@ -3,10 +3,17 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { toast } from "sonner"
 import type { BalancedTeams, TierKey } from "@/shared/types"
-import { getPlayerTier, getPlayerScore, isBannedPlayer, allPlayers } from "@/entities/player"
+import { usePlayerContext } from "@/entities/player"
 import { findBestBalance } from "./balance-algorithm"
 
 export function useBalancer() {
+  const {
+    allPlayers,
+    getPlayerTier,
+    getPlayerScore,
+    isBannedPlayer,
+    isLoading: playersLoading,
+  } = usePlayerContext()
   const [players, setPlayers] = useState<string[]>(Array(10).fill(""))
   const [teams, setTeams] = useState<BalancedTeams | null>(null)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -14,6 +21,7 @@ export function useBalancer() {
   // 자동완성 상태
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null)
   const [suggestions, setSuggestions] = useState<{ name: string; tier: TierKey }[]>([])
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(0)
 
   const filledCount = players.filter((p) => p.trim()).length
 
@@ -33,6 +41,7 @@ export function useBalancer() {
 
     setSuggestions(filtered)
     setActiveInputIndex(index)
+    setSelectedSuggestionIndex(0)
   }, [players])
 
   const handleInputChange = useCallback((index: number, value: string) => {
@@ -75,11 +84,25 @@ export function useBalancer() {
   }, [players])
 
   const handleKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      if (suggestions.length > 0) {
+        setSelectedSuggestionIndex((prev) =>
+          prev < suggestions.length - 1 ? prev + 1 : 0
+        )
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      if (suggestions.length > 0) {
+        setSelectedSuggestionIndex((prev) =>
+          prev > 0 ? prev - 1 : suggestions.length - 1
+        )
+      }
+    } else if (e.key === "Enter") {
       e.preventDefault()
 
       if (suggestions.length > 0 && activeInputIndex === index) {
-        selectSuggestion(suggestions[0].name, index)
+        selectSuggestion(suggestions[selectedSuggestionIndex].name, index)
         return
       }
 
@@ -98,8 +121,9 @@ export function useBalancer() {
     } else if (e.key === "Escape") {
       setSuggestions([])
       setActiveInputIndex(null)
+      setSelectedSuggestionIndex(0)
     }
-  }, [suggestions, activeInputIndex, players, selectSuggestion])
+  }, [suggestions, activeInputIndex, players, selectSuggestion, selectedSuggestionIndex])
 
   const clearInput = useCallback((index: number) => {
     const newPlayers = [...players]
@@ -216,7 +240,9 @@ export function useBalancer() {
     inputRefs,
     activeInputIndex,
     suggestions,
+    selectedSuggestionIndex,
     filledCount,
+    playersLoading,
     handleInputChange,
     handleInputFocus,
     handleInputBlur,

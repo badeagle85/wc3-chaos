@@ -14,50 +14,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/ui/table"
-import { Search, UserPlus } from "lucide-react"
-import playersData from "@/data/players.json"
-
-type PlayerData = typeof playersData
-
-const tierLabels: Record<string, string> = {
-  "1": "1티어",
-  "2": "2티어",
-  "2.5": "2.5티어",
-  "3": "3티어",
-  "3.5": "3.5티어",
-  "4": "4티어",
-  "5": "5티어",
-  "6": "6티어",
-  "new": "신규",
-  "banned": "밴",
-}
-
-function getAllPlayers() {
-  const players: { name: string; tier: string }[] = []
-  const tiers: (keyof PlayerData)[] = ["1", "2", "2.5", "3", "3.5", "4", "5", "6", "new"]
-
-  for (const tier of tiers) {
-    const tierPlayers = playersData[tier] as string[]
-    for (const name of tierPlayers) {
-      players.push({ name, tier })
-    }
-  }
-
-  const banned = playersData.banned as { name: string; reason: string }[]
-  for (const player of banned) {
-    players.push({ name: player.name, tier: "banned" })
-  }
-
-  return players
-}
+import { Search, UserPlus, Loader2 } from "lucide-react"
+import { usePlayerContext } from "@/entities/player"
+import { tierLabels } from "@/shared/config"
 
 export default function AdminPlayersPage() {
+  const { players, isLoading } = usePlayerContext()
   const [searchQuery, setSearchQuery] = useState("")
-  const allPlayers = getAllPlayers()
 
-  const filteredPlayers = allPlayers.filter((player) =>
+  const filteredPlayers = players.filter((player) =>
     player.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  if (isLoading) {
+    return (
+      <LayoutWrapper title="플레이어 관리" isAdmin>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">로딩 중...</span>
+        </div>
+      </LayoutWrapper>
+    )
+  }
 
   return (
     <LayoutWrapper title="플레이어 관리" isAdmin>
@@ -67,7 +45,7 @@ export default function AdminPlayersPage() {
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <CardTitle className="flex items-center gap-2">
                 플레이어 목록
-                <Badge variant="secondary">{allPlayers.length}명</Badge>
+                <Badge variant="secondary">{players.length}명</Badge>
               </CardTitle>
               <div className="flex gap-2">
                 <div className="relative flex-1 sm:w-64">

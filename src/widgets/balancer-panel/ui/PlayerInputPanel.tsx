@@ -3,7 +3,7 @@
 import { Input } from "@/shared/ui"
 import { tierColors } from "@/shared/config"
 import { Team, type TierKey } from "@/shared/types"
-import { getPlayerTier, isBannedPlayer, allPlayers } from "@/entities/player"
+import { usePlayerContext } from "@/entities/player"
 
 interface PlayerInputPanelProps {
   team: Team
@@ -11,6 +11,7 @@ interface PlayerInputPanelProps {
   inputRefs: React.MutableRefObject<(HTMLInputElement | null)[]>
   activeInputIndex: number | null
   suggestions: { name: string; tier: TierKey }[]
+  selectedSuggestionIndex: number
   onInputChange: (index: number, value: string) => void
   onInputFocus: (index: number) => void
   onInputBlur: () => void
@@ -26,6 +27,7 @@ export function PlayerInputPanel({
   inputRefs,
   activeInputIndex,
   suggestions,
+  selectedSuggestionIndex,
   onInputChange,
   onInputFocus,
   onInputBlur,
@@ -34,6 +36,7 @@ export function PlayerInputPanel({
   onClearInput,
   getTeamScore,
 }: PlayerInputPanelProps) {
+  const { getPlayerTier, isBannedPlayer } = usePlayerContext()
   const isNightElf = team === Team.NIGHT_ELF
   const indices = isNightElf ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9]
   const teamPlayers = isNightElf ? players.slice(0, 5) : players.slice(5, 10)
@@ -112,12 +115,16 @@ export function PlayerInputPanel({
 
               {showSuggestions && (
                 <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {suggestions.map((s) => (
+                  {suggestions.map((s, sIndex) => (
                     <button
                       key={s.name}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => onSelectSuggestion(s.name, index)}
-                      className="w-full px-3 py-2.5 text-left text-base hover:bg-accent flex justify-between items-center"
+                      className={`w-full px-3 py-2.5 text-left text-base flex justify-between items-center ${
+                        sIndex === selectedSuggestionIndex
+                          ? "bg-accent"
+                          : "hover:bg-accent"
+                      }`}
                     >
                       <span>{s.name}</span>
                       <span className={`text-xs text-white px-1.5 py-0.5 rounded ${tierColors[s.tier]}`}>

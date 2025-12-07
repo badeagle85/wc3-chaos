@@ -3,7 +3,7 @@
 import { ArrowRightLeft } from "lucide-react"
 import { MoveStatus, type BalancedTeams } from "@/shared/types"
 import { tierColors } from "@/shared/config"
-import { getPlayerTier } from "@/entities/player"
+import { usePlayerContext } from "@/entities/player"
 
 interface BalanceResultProps {
   teams: BalancedTeams
@@ -12,6 +12,7 @@ interface BalanceResultProps {
 }
 
 export function BalanceResult({ teams, players, getTeamScore }: BalanceResultProps) {
+  const { getPlayerTier } = usePlayerContext()
   // 원래 나엘(1-5), 언데(6-10) 멤버
   const originalNightElf = players.slice(0, 5).map(p => p.trim().toLowerCase()).filter(p => p)
   const originalUndead = players.slice(5, 10).map(p => p.trim().toLowerCase()).filter(p => p)

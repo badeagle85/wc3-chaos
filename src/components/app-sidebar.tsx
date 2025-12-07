@@ -3,8 +3,8 @@
 import * as React from "react"
 import {
   BarChart3,
+  BookOpen,
   Calculator,
-  Home,
   Megaphone,
   Moon,
   Settings,
@@ -33,9 +33,9 @@ import {
 // 메뉴 데이터
 const publicMenuItems = [
   {
-    title: "홈",
+    title: "팀 밸런서",
     url: "/",
-    icon: Home,
+    icon: Swords,
   },
   {
     title: "티어표",
@@ -43,20 +43,20 @@ const publicMenuItems = [
     icon: BarChart3,
   },
   {
-    title: "팀 밸런서",
-    url: "/balancer",
-    icon: Swords,
+    title: "가이드",
+    url: "/guide",
+    icon: BookOpen,
   },
   {
     title: "점수 계산기",
     url: "/calculator",
     icon: Calculator,
   },
-  {
-    title: "공지사항",
-    url: "/announcements",
-    icon: Megaphone,
-  },
+  // {
+  //   title: "공지사항",
+  //   url: "/announcements",
+  //   icon: Megaphone,
+  // },
 ]
 
 const adminMenuItems = [
